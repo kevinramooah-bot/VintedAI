@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#09B1A8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="VintedAI">
+<title>VintedAI — Annonces en 1 clic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal: #09B1A8;
+    --teal-dark: #078f87;
+    --teal-pale: #e6f9f8;
+    --ink: #1a1a2e;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --bg: #FAFAF7;
+    --white: #ffffff;
+    --r: 16px;
+    --rmd: 10px;
+    --success: #22c55e;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    flex-shrink: 0;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--teal);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .topbar-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; letter-spacing: -0.5px; }
+  .topbar-sub { font-size: 11px; color: var(--muted); }
+  .tab-switcher {
+    margin-left: auto;
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 3px;
+    display: flex; gap: 2px;
+  }
+  .tsw { padding: 5px 10px; border-radius: 6px; font-size: 12px; font-family: 'Syne', sans-serif; font-weight: 700; cursor: pointer; color: var(--muted); transition: all 0.15s; }
+  .tsw.active { background: var(--white); color: var(--teal); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  /* ── SCROLL AREA ── */
+  .scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── VIEWS ── */
+  .view { display: none; padding: 16px 16px 100px; }
+  .view.active { display: block; }
+
+  /* ── SECTION LABEL ── */
+  .slabel { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+
+  /* ── UPLOAD ── */
+  .ugrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+  .uzone {
+    border: 2px dashed var(--border); border-radius: var(--r);
+    background: var(--white); position: relative; overflow: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 130px; cursor: pointer; transition: all 0.2s; text-align: center; padding: 16px 10px;
+  }
+  .uzone:active { transform: scale(0.98); }
+  .uzone.has-img { border-style: solid; border-color: var(--teal); padding: 0; }
+  .uzone input[type="file"] { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
+  .uzone .ui { font-size: 24px; margin-bottom: 6px; }
+  .uzone .ul { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; }
+  .uzone .us { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .uzone img.prev { width: 100%; height: 130px; object-fit: cover; border-radius: calc(var(--r) - 2px); display: block; }
+  .prev-ov { position: absolute; inset: 0; background: rgba(9,177,168,0.8); display: flex; align-items: center; justify-content: center; opacity: 0; font-size: 12px; color: white; font-weight: 600; font-family: 'Syne', sans-serif; border-radius: calc(var(--r) - 2px); transition: opacity 0.15s; }
+  .uzone.has-img:active .prev-ov { opacity: 1; }
+
+  /* Camera trigger badge */
+  .cam-badge {
+    position: absolute; bottom: 6px; right: 6px;
+    background: var(--teal); color: white; border-radius: 20px;
+    font-size: 10px; font-weight: 700; font-family: 'Syne', sans-serif;
+    padding: 2px 7px; pointer-events: none;
+  }
+  .uzone.has-img .cam-badge { display: none; }
+
+  /* ── CATEGORIES ── */
+  .cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
+  .cat {
+    border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 10px 6px; text-align: center; cursor: pointer; background: var(--white);
+    transition: all 0.15s;
+  }
+  .cat:active { transform: scale(0.95); }
+  .cat.active { border-color: var(--teal); background: var(--teal-pale); }
+  .cat .ci { font-size: 20px; display: block; margin-bottom: 4px; }
+  .cat .cn { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; color: var(--ink); }
+
+  /* ── TONE PILLS ── */
+  .pills { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 18px; }
+  .pill {
+    padding: 6px 13px; border-radius: 30px; border: 1.5px solid var(--border);
+    font-size: 12px; cursor: pointer; transition: all 0.15s; background: var(--white);
+    font-family: 'DM Sans', sans-serif; font-weight: 500; color: var(--muted);
+  }
+  .pill.active { background: var(--teal); border-color: var(--teal); color: white; }
+
+  /* ── BUTTON ── */
+  .btn-gen {
+    width: 100%; padding: 16px; background: var(--teal); color: white; border: none;
+    border-radius: var(--r); font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center;
+    gap: 8px; margin-bottom: 18px;
+  }
+  .btn-gen:active { transform: scale(0.98); background: var(--teal-dark); }
+  .btn-gen:disabled { opacity: 0.4; pointer-events: none; }
+
+  /* ── LOADING ── */
+  .lbar { width: 100%; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 14px; display: none; }
+  .lbar.on { display: block; }
+  .lbar::after { content: ''; display: block; height: 100%; width: 40%; background: var(--teal); border-radius: 2px; animation: sl 1.2s ease-in-out infinite; }
+  @keyframes sl { 0%{transform:translateX(-200%)} 100%{transform:translateX(350%)} }
+  .ltext { text-align: center; font-size: 12px; color: var(--muted); margin-bottom: 14px; font-style: italic; display: none; }
+  .ltext.on { display: block; }
+
+  /* ── ERROR ── */
+  .errbox { background: #fef2f2; border: 1px solid #fca5a5; border-radius: var(--r); padding: 12px 14px; font-size: 12px; color: var(--danger); display: none; margin-bottom: 14px; }
+  .errbox.on { display: block; }
+
+  /* ── PRICE BOX ── */
+  .pricebox {
+    background: var(--teal-pale); border: 1.5px solid var(--teal); border-radius: var(--r);
+    padding: 14px 16px; margin-bottom: 14px; display: none;
+    animation: fadeUp 0.3s ease;
+  }
+  .pricebox.on { display: block; }
+  .price-top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  .price-val { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; color: var(--teal-dark); }
+  .price-range { font-size: 12px; color: var(--muted); }
+  .price-tip { font-size: 12px; color: var(--ink); margin-top: 4px; line-height: 1.5; }
+
+  /* ── RESULT CARD ── */
+  .rcard { background: var(--white); border-radius: var(--r); border: 1.5px solid var(--teal); overflow: hidden; display: none; animation: fadeUp 0.35s ease; margin-bottom: 14px; }
+  .rcard.on { display: block; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .rh { background: var(--teal-pale); padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(9,177,168,0.2); }
+  .rh-title { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; color: var(--teal-dark); }
+  .btns-row { display: flex; gap: 7px; }
+  .btn-sm { padding: 6px 12px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; font-family: 'Syne', sans-serif; cursor: pointer; transition: all 0.15s; }
+  .btn-sm:active { transform: scale(0.96); }
+  .btn-sm.primary { background: var(--teal); color: white; }
+  .btn-sm.primary:active { background: var(--teal-dark); }
+  .btn-sm.sec { background: var(--white); color: var(--ink); border: 1.5px solid var(--border); }
+  .btn-sm.success { background: var(--success); color: white; }
+  .rtextarea {
+    width: 100%; min-height: 220px; border: none; outline: none;
+    font-family: 'DM Sans', sans-serif; font-size: 13.5px; line-height: 1.75;
+    color: var(--ink); resize: vertical; background: transparent; padding: 14px;
+  }
+  .rchips { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; border-top: 1px solid var(--border); background: #fafafa; }
+  .chip { padding: 3px 9px; background: white; border: 1px solid var(--border); border-radius: 20px; font-size: 11px; color: var(--muted); }
+  .chip strong { color: var(--ink); font-weight: 600; }
+
+  /* ── HISTORY ── */
+  .hist-empty { text-align: center; padding: 56px 20px; color: var(--muted); }
+  .hist-empty .he { font-size: 40px; margin-bottom: 12px; display: block; }
+  .hlist { display: flex; flex-direction: column; gap: 10px; }
+  .hcard { background: var(--white); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+  .hcard-top { padding: 12px 14px; display: flex; gap: 10px; align-items: flex-start; }
+  .hthumb { width: 48px; height: 48px; border-radius: 9px; object-fit: cover; flex-shrink: 0; background: var(--teal-pale); }
+  .hthumb-ph { width: 48px; height: 48px; border-radius: 9px; background: var(--teal-pale); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .hinfo { flex: 1; min-width: 0; }
+  .htitle { font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+  .hmeta { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .hpreview { font-size: 11.5px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.5; }
+  .hfoot { padding: 9px 14px; border-top: 1px solid var(--border); background: #fafafa; display: flex; align-items: center; gap: 7px; }
+  .hbadge { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; font-family: 'Syne', sans-serif; }
+  .hbadge.teal { background: var(--teal-pale); color: var(--teal-dark); }
+  .hbadge.gray { background: #f3f4f6; color: var(--muted); }
+  .btn-del { margin-left: auto; padding: 4px 10px; background: white; border: 1px solid var(--border); border-radius: 7px; font-size: 11px; color: var(--muted); cursor: pointer; }
+  .btn-del:active { border-color: #fca5a5; color: var(--danger); }
+
+  /* ── BOTTOM NAV ── */
+  .bot-nav {
+    flex-shrink: 0; background: var(--white); border-top: 1px solid var(--border);
+    display: flex; padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+  }
+  .bnav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px 0; }
+  .bnav-icon { font-size: 22px; }
+  .bnav-label { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; color: var(--muted); transition: color 0.15s; }
+  .bnav-item.active .bnav-label { color: var(--teal); }
+
+  @media (min-width: 600px) {
+    .view { max-width: 500px; margin: 0 auto; }
+    .topbar { max-width: 500px; margin: 0 auto; padding-left: 0; padding-right: 0; }
+    .bot-nav { max-width: 500px; margin: 0 auto; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo-mark">👗</div>
+  <div>
+    <div class="topbar-title">VintedAI</div>
+    <div class="topbar-sub">Annonces en 1 clic</div>
+  </div>
+</div>
+
+<!-- SCROLL AREA -->
+<div class="scroll-area">
+
+  <!-- GENERATE VIEW -->
+  <div class="view active" id="view-generate">
+
+    <p class="slabel">📷 Photos</p>
+    <div class="ugrid">
+      <div class="uzone" id="zone-article">
+        <input type="file" accept="image/*" capture="environment" onchange="handleFile('article',this)">
+        <span class="ui">👕</span>
+        <span class="ul">Article</span>
+        <span class="us">Photo principale</span>
+        <span class="cam-badge">📷 Caméra</span>
+        <div class="prev-ov">✏️ Changer</div>
+      </div>
+      <div class="uzone" id="zone-etiquette">
+        <input type="file" accept="image/*" capture="environment" onchange="handleFile('etiquette',this)">
+        <span class="ui">🏷️</span>
+        <span class="ul">Étiquette</span>
+        <span class="us">Optionnel</span>
+        <span class="cam-badge">📷 Caméra</span>
+        <div class="prev-ov">✏️ Changer</div>
+      </div>
+    </div>
+
+    <p class="slabel">🗂️ Catégorie</p>
+    <div class="cats" id="cats">
+      <div class="cat active" onclick="setCat(this,'hauts')"><span class="ci">👕</span><span class="cn">Hauts</span></div>
+      <div class="cat" onclick="setCat(this,'robes')"><span class="ci">👗</span><span class="cn">Robes</span></div>
+      <div class="cat" onclick="setCat(this,'pantalons')"><span class="ci">👖</span><span class="cn">Pantalons</span></div>
+      <div class="cat" onclick="setCat(this,'vestes')"><span class="ci">🧥</span><span class="cn">Vestes</span></div>
+      <div class="cat" onclick="setCat(this,'chaussures')"><span class="ci">👟</span><span class="cn">Chaussures</span></div>
+      <div class="cat" onclick="setCat(this,'accessoires')"><span class="ci">👜</span><span class="cn">Accessoires</span></div>
+      <div class="cat" onclick="setCat(this,'sport')"><span class="ci">🏃</span><span class="cn">Sport</span></div>
+      <div class="cat" onclick="setCat(this,'enfants')"><span class="ci">🧒</span><span class="cn">Enfants</span></div>
+    </div>
+
+    <p class="slabel">✨ Ton</p>
+    <div class="pills">
+      <div class="pill active" onclick="setTone(this,'casual')">😊 Sympa</div>
+      <div class="pill" onclick="setTone(this,'pro')">💼 Pro</div>
+      <div class="pill" onclick="setTone(this,'fun')">🎉 Fun</div>
+      <div class="pill" onclick="setTone(this,'luxe')">✨ Luxe</div>
+    </div>
+
+    <button class="btn-gen" id="btn-gen" onclick="generate()" disabled>
+      ⚡ Générer l'annonce + prix
+    </button>
+
+    <div class="lbar" id="lbar"></div>
+    <div class="ltext" id="ltext">Analyse en cours…</div>
+    <div class="errbox" id="errbox"></div>
+
+    <div class="pricebox" id="pricebox">
+      <div class="price-top">
+        <div class="price-val" id="price-val">—</div>
+        <div class="price-range" id="price-range"></div>
+      </div>
+      <div class="price-tip" id="price-tip"></div>
+    </div>
+
+    <div class="rcard" id="rcard">
+      <div class="rh">
+        <div class="rh-title">✅ Annonce générée</div>
+        <div class="btns-row">
+          <button class="btn-sm sec" onclick="saveHistory()">💾</button>
+          <button class="btn-sm primary" id="btn-copy" onclick="copyText()">📋 Copier</button>
+        </div>
+      </div>
+      <textarea class="rtextarea" id="rtext"></textarea>
+      <div class="rchips" id="rchips"></div>
+    </div>
+
+  </div>
+
+  <!-- HISTORY VIEW -->
+  <div class="view" id="view-history">
+    <div class="hist-empty" id="hist-empty">
+      <span class="he">🕐</span>
+      <p style="font-size:14px;font-weight:500;margin-bottom:6px">Aucune annonce sauvegardée</p>
+      <p style="font-size:12px">Génère et sauvegarde des annonces pour les retrouver ici</p>
+    </div>
+    <div class="hlist" id="hlist"></div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bot-nav">
+  <div class="bnav-item active" id="nav-gen" onclick="switchView('generate')">
+    <span class="bnav-icon">⚡</span>
+    <span class="bnav-label">Générer</span>
+  </div>
+  <div class="bnav-item" id="nav-hist" onclick="switchView('history')">
+    <span class="bnav-icon">🕐</span>
+    <span class="bnav-label">Historique (<span id="hcount">0</span>)</span>
+  </div>
+</nav>
+
+<script>
+const S = { article: null, etiquette: null, tone: 'casual', category: 'hauts' };
+let history = JSON.parse(localStorage.getItem('vai_hist') || '[]');
+let lastResult = {};
+const LMSGS = ['🔍 Analyse des photos…', '🏷️ Lecture de l\'étiquette…', '💰 Estimation du prix…', '✍️ Rédaction en cours…'];
+const TONES = {
+  casual: 'Ton amical, chaleureux, quelques emojis (3-5). Donne envie sans être trop vendeur.',
+  pro: 'Ton professionnel et factuel. Peu d\'emojis. Caractéristiques clés bien mises en avant.',
+  fun: 'Ton très fun et enthousiaste, beaucoup d\'emojis (8-12), style jeune et dynamique.',
+  luxe: 'Ton premium et élégant. Vocabulaire raffiné, souligne la qualité. Max 2 emojis.'
+};
+const CATS = {
+  hauts:'t-shirt, chemise, pull, sweat, top, blouse',
+  robes:'robe, combinaison, tunique',
+  pantalons:'pantalon, jean, short, jupe, legging',
+  vestes:'veste, manteau, blouson, parka, trench',
+  chaussures:'chaussures, sneakers, bottines, sandales, boots',
+  accessoires:'sac, ceinture, écharpe, chapeau, bijou, montre',
+  sport:'vêtement de sport, legging sport, brassière, maillot',
+  enfants:'vêtement enfant, bébé'
+};
+const CAT_ICONS = { hauts:'👕', robes:'👗', pantalons:'👖', vestes:'🧥', chaussures:'👟', accessoires:'👜', sport:'🏃', enfants:'🧒' };
+
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === 'view-' + v));
+  document.querySelectorAll('.bnav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('nav-' + (v === 'generate' ? 'gen' : 'hist')).classList.add('active');
+  if (v === 'history') renderHistory();
+}
+
+function handleFile(type, input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    S[type] = e.target.result;
+    const zone = document.getElementById('zone-' + type);
+    zone.classList.add('has-img');
+    let img = zone.querySelector('img.prev');
+    if (!img) { img = document.createElement('img'); img.className = 'prev'; zone.insertBefore(img, zone.firstChild); }
+    img.src = e.target.result;
+    zone.querySelectorAll('.ui,.ul,.us').forEach(el => el.style.display = 'none');
+    checkReady();
+  };
+  reader.readAsDataURL(file);
+}
+function checkReady() { document.getElementById('btn-gen').disabled = !S.article; }
+function setCat(el, cat) { document.querySelectorAll('.cat').forEach(c => c.classList.remove('active')); el.classList.add('active'); S.category = cat; }
+function setTone(el, tone) { document.querySelectorAll('.pill').forEach(p => p.classList.remove('active')); el.classList.add('active'); S.tone = tone; }
+
+let lInt;
+async function generate() {
+  const btn = document.getElementById('btn-gen');
+  const lbar = document.getElementById('lbar'); const ltext = document.getElementById('ltext');
+  const errbox = document.getElementById('errbox'); const rcard = document.getElementById('rcard');
+  const pricebox = document.getElementById('pricebox');
+  btn.disabled = true;
+  lbar.classList.add('on'); ltext.classList.add('on');
+  errbox.classList.remove('on'); rcard.classList.remove('on'); pricebox.classList.remove('on');
+  let mi = 0; ltext.textContent = LMSGS[0];
+  lInt = setInterval(() => { mi = (mi + 1) % LMSGS.length; ltext.textContent = LMSGS[mi]; }, 1800);
+  try {
+    const content = [];
+    if (S.article) {
+      const b64 = S.article.split(',')[1]; const mt = S.article.split(';')[0].split(':')[1];
+      content.push({ type: 'image', source: { type: 'base64', media_type: mt, data: b64 } });
+      content.push({ type: 'text', text: 'Image 1 : Photo de l\'article' });
+    }
+    if (S.etiquette) {
+      const b64 = S.etiquette.split(',')[1]; const mt = S.etiquette.split(';')[0].split(':')[1];
+      content.push({ type: 'image', source: { type: 'base64', media_type: mt, data: b64 } });
+      content.push({ type: 'text', text: 'Image 2 : Photo de l\'étiquette' });
+    }
+    content.push({ type: 'text', text: `Tu es expert en vente sur Vinted en France.
+CATÉGORIE : ${S.category} (types : ${CATS[S.category] || S.category})
+TON : ${TONES[S.tone]}
+
+TÂCHE 1 — ANNONCE VINTED :
+Génère une annonce complète avec :
+1. Titre accrocheur (max 50 caractères)
+2. Description (état, matière, coupe, style, infos visibles)
+3. Infos pratiques (taille, marque, composition si visible)
+4. Points forts
+5. 5-8 hashtags
+
+TÂCHE 2 — ESTIMATION DE PRIX :
+Estime un prix de vente réaliste sur Vinted France.
+Prends en compte : marque, état, catégorie, tendances marché secondaire.
+
+FORMAT :
+D'abord l'annonce, puis exactement :
+---JSON---
+{"marque":"...","taille":"...","couleur":"...","matiere":"...","etat":"...","prix_suggere":XX,"prix_min":XX,"prix_max":XX,"conseil_prix":"1 phrase"}
+Mets null si non visible. Prix en euros entiers.` });
+
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1200, messages: [{ role: 'user', content }] })
+    });
+    if (!res.ok) throw new Error('Erreur serveur ' + res.status);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || 'Erreur API');
+    const full = data.content.map(b => b.text || '').join('');
+    const parts = full.split('---JSON---');
+    const annonce = parts[0].trim();
+    let info = {}, price = {};
+    if (parts[1]) {
+      try {
+        const p = JSON.parse(parts[1].trim());
+        info = { marque: p.marque, taille: p.taille, couleur: p.couleur, matiere: p.matiere, etat: p.etat };
+        price = { suggere: p.prix_suggere, min: p.prix_min, max: p.prix_max, conseil: p.conseil_prix };
+      } catch(e) {}
+    }
+    lastResult = { annonce, info, price, category: S.category, thumb: S.article };
+    document.getElementById('rtext').value = annonce;
+    const lbls = { marque:'👜 Marque', taille:'📏 Taille', couleur:'🎨 Couleur', matiere:'🧵 Matière', etat:'⭐ État' };
+    const chips = Object.entries(info).filter(([,v]) => v && v !== 'null').map(([k,v]) => `<div class="chip"><strong>${lbls[k]||k}</strong> : ${v}</div>`);
+    document.getElementById('rchips').innerHTML = chips.join('');
+    rcard.classList.add('on');
+    if (price.suggere) {
+      document.getElementById('price-val').textContent = price.suggere + '€';
+      document.getElementById('price-range').textContent = `Fourchette : ${price.min||'?'}€ – ${price.max||'?'}€`;
+      document.getElementById('price-tip').textContent = price.conseil || '';
+      pricebox.classList.add('on');
+    }
+    rcard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch(err) {
+    document.getElementById('errbox').textContent = '⚠️ ' + err.message;
+    document.getElementById('errbox').classList.add('on');
+  } finally {
+    clearInterval(lInt);
+    lbar.classList.remove('on'); ltext.classList.remove('on');
+    btn.disabled = false; checkReady();
+  }
+}
+
+function copyText() {
+  navigator.clipboard.writeText(document.getElementById('rtext').value).then(() => {
+    const b = document.getElementById('btn-copy');
+    b.textContent = '✅ Copié !'; b.classList.remove('primary'); b.classList.add('success');
+    setTimeout(() => { b.textContent = '📋 Copier'; b.classList.remove('success'); b.classList.add('primary'); }, 2000);
+  });
+}
+
+function saveHistory() {
+  if (!lastResult.annonce) return;
+  const entry = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }),
+    ...lastResult
+  };
+  history.unshift(entry);
+  if (history.length > 30) history = history.slice(0, 30);
+  localStorage.setItem('vai_hist', JSON.stringify(history));
+  document.getElementById('hcount').textContent = history.length;
+  const b = document.querySelector('.btn-sm.sec');
+  b.textContent = '✅'; setTimeout(() => b.textContent = '💾', 1500);
+}
+
+function renderHistory() {
+  const list = document.getElementById('hlist');
+  const empty = document.getElementById('hist-empty');
+  document.getElementById('hcount').textContent = history.length;
+  if (!history.length) { empty.style.display = 'block'; list.innerHTML = ''; return; }
+  empty.style.display = 'none';
+  list.innerHTML = history.map(e => {
+    const title = e.annonce.split('\n')[0].replace(/^#+\s*/, '').slice(0, 55);
+    const preview = e.annonce.split('\n').slice(1).join(' ').trim().slice(0, 80) + '…';
+    const marque = e.info?.marque || '—'; const prix = e.price?.suggere ? e.price.suggere + '€' : '—';
+    const thumb = e.thumb ? `<img class="hthumb" src="${e.thumb}">` : `<div class="hthumb-ph">${CAT_ICONS[e.category]||'👕'}</div>`;
+    return `<div class="hcard">
+      <div class="hcard-top">
+        ${thumb}
+        <div class="hinfo">
+          <div class="htitle">${title}</div>
+          <div class="hmeta">${e.date} · ${marque}</div>
+          <div class="hpreview">${preview}</div>
+        </div>
+      </div>
+      <div class="hfoot">
+        <span class="hbadge teal">${prix}</span>
+        <span class="hbadge gray">${e.category||'—'}</span>
+        <button class="btn-del" onclick="delEntry(${e.id})">🗑️</button>
+        <button class="btn-sm primary" style="margin-left:4px;padding:4px 10px;font-size:11px" onclick="copyEntry(${e.id})">📋</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function delEntry(id) { history = history.filter(h => h.id !== id); localStorage.setItem('vai_hist', JSON.stringify(history)); renderHistory(); }
+function copyEntry(id) { const e = history.find(h => h.id === id); if (e) navigator.clipboard.writeText(e.annonce); }
+
+// Init
+document.getElementById('hcount').textContent = history.length;
+</script>
+</body>
+</html>
